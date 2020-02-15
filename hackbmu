@@ -1,0 +1,78 @@
+#include <SoftwareSerial.h>
+#include <TinyGPS++.h>
+#include <Wire.h>
+#define button 9
+boolean buttonState;
+SoftwareSerial SIM900(3,4);
+TinyGPSPlus gps;
+int value = 0;
+SoftwareSerial ss(5, 6);
+char longitude[16]="76.8088419";
+char latitude[16]="28.2455707";
+long timer = 0;
+
+void setup()
+{
+  Serial.begin(9600);
+  ss.begin(9600);
+  Wire.begin();
+  pinMode(button,INPUT);  
+  delay(2000);
+  
+}
+
+void SendMessage()
+{
+  delay(500);
+  SIM900.begin(9600);
+  delay(3000);
+  SIM900.println("AT+CMGF=1");    //Sets the GSM Module in Text Mode
+  delay(1000);  // Delay of 1000 milli seconds or 1 second
+  SIM900.println("AT+CMGS=\"+918279767708\"\r"); // Replace x with mobile number
+  delay(1000);
+  SIM900.print("HELP Track Me at :");
+  /*delay(1000);
+  SIM900.print("LAT:");
+  delay(1000);
+  SIM900.print(latitude);
+  delay(1000);
+  SIM900.print("LON:");
+  delay(1000);
+  SIM900.print(longitude);
+  */
+  delay(1000);  
+  SIM900.println("\n http://www.google.com/maps/place/"+String(latitude)+","+String(longitude));
+  SIM900.println((char)26);// ASCII code of CTRL+Z
+  Serial.println("SMS sent");
+  delay(3000);
+}
+
+void displayInfo()
+{
+  Serial.print(F("Location: ")); 
+  if (gps.location.isValid())
+  {
+    Serial.print(gps.location.lat(), 6);
+    Serial.print(F(","));
+    Serial.print(gps.location.lng(), 6);
+  }
+  Serial.println();
+}
+
+void loop()
+{
+  buttonState = digitalRead(button);
+  while(buttonState){
+    while (ss.available() > 0)
+      if (gps.encode(ss.read()))
+        displayInfo();
+    //if (gps.location.isValid())
+    {
+        delay(1000);
+        Serial.println("Sending SMS ...");
+        SendMessage();
+        ss.begin(9600);   
+      }
+      buttonState=0;
+  }
+  }
